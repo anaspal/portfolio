@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+Disallow: /portfolio/admin.html
+Sitemap: https://anaspal.github.io/portfolio/sitemap.xml

@@ -1,0 +1,22 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // الكتابة مسموحة فقط لمستخدمك أنت (حسب معرّف المستخدم UID)
+    function isAdmin() {
+      return request.auth != null
+          && request.auth.uid == "G1UvymU3QDOVWxkUtgXw15zQepl1";
+    }
+
+    // الأعمال العامة: الكل يقرأ، أنت فقط تكتب
+    match /projects/{id} {
+      allow read: if true;
+      allow write: if isAdmin();
+    }
+
+    // أي مسار آخر ممنوع تمامًا
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

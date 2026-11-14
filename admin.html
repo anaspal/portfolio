@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <meta name="theme-color" content="#0f172a">
+  <link rel="icon" href="favicon.ico" sizes="any">
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon-32.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon-16.png">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>لوحة إدارة المعرض</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --bg: #f4f7fb; --card: #ffffff; --text: #0f172a; --muted: #64748b; --line: rgba(15,23,42,.14);
+      --accent: #2563eb; --accent-text: #ffffff; --danger: #dc2626; --ok: #16a34a; --warn: #b45309;
+      --field: #ffffff; --shadow: 0 10px 30px rgba(15,23,42,.08);
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg:#030711; --card:#0f172a; --text:#f8fafc; --muted:#94a3b8; --line:rgba(255,255,255,.14);
+              --accent:#60a5fa; --accent-text:#03112b; --danger:#f87171; --ok:#4ade80; --warn:#fbbf24; --field:#0b1222; --shadow:none; }
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font-family:'Segoe UI',Tahoma,system-ui,sans-serif; background:var(--bg); color:var(--text); line-height:1.6; }
+    [hidden] { display:none !important; }
+    .top { position:sticky; top:0; z-index:5; display:flex; gap:12px; align-items:center; justify-content:space-between; flex-wrap:wrap;
+           padding:12px 18px; background:var(--card); border-bottom:1px solid var(--line); }
+    .top h1 { margin:0; font-size:1.05rem; }
+    .top .who { display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:.85rem; color:var(--muted); }
+    main { max-width:980px; margin:0 auto; padding:18px; }
+    .panel { background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px; box-shadow:var(--shadow); }
+    .center { max-width:520px; margin:60px auto; text-align:center; }
+    .center h2 { margin-top:0; }
+    .center ol { text-align:right; }
+    code, .code { direction:ltr; unicode-bidi:plaintext; background:rgba(100,116,139,.18); padding:1px 6px; border-radius:6px; font-size:.85em; }
+    button, .btn { font:inherit; cursor:pointer; border:1px solid var(--line); background:var(--field); color:var(--text);
+                   padding:8px 14px; border-radius:10px; text-decoration:none; display:inline-flex; align-items:center; gap:6px; }
+    button:hover { border-color:var(--accent); }
+    button:disabled { opacity:.55; cursor:not-allowed; }
+    button.primary { background:var(--accent); color:var(--accent-text); border-color:transparent; font-weight:700; }
+    button.danger { color:var(--danger); }
+    button.icon { padding:6px 10px; }
+    .toolbar { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:14px; }
+    .toolbar .grow { flex:1; }
+    .hint { color:var(--muted); font-size:.85rem; margin:6px 0; }
+    .warn { color:var(--warn); }
+    .list { display:grid; gap:10px; }
+    .row { display:grid; grid-template-columns:84px 1fr auto; gap:12px; align-items:center; padding:10px; border:1px solid var(--line); border-radius:14px; background:var(--card); }
+    .row.hidden-item > :not(.actions) { opacity:.5; }
+    .thumb { width:84px; height:60px; border-radius:10px; object-fit:cover; background:rgba(100,116,139,.2); display:grid; place-items:center; color:var(--muted); font-size:.75rem; overflow:hidden; }
+    .thumb img { width:100%; height:100%; object-fit:cover; }
+    .row h3 { margin:0; font-size:.98rem; overflow-wrap:anywhere; }
+    .row .meta { color:var(--muted); font-size:.8rem; }
+    .badge { display:inline-block; font-size:.72rem; padding:1px 8px; border-radius:999px; border:1px solid var(--line); margin-inline-start:6px; }
+    .actions { display:flex; gap:6px; flex-wrap:wrap; justify-content:flex-end; }
+    @media (max-width:640px) { .row { grid-template-columns:64px 1fr; } .row .actions { grid-column:1 / -1; justify-content:flex-start; } .thumb { width:64px; height:48px; } }
+    dialog { width:min(820px, 96vw); max-height:92vh; border:1px solid var(--line); border-radius:18px; background:var(--card); color:var(--text); padding:0; }
+    dialog::backdrop { background:rgba(2,8,23,.6); }
+    .dlg-head { display:flex; justify-content:space-between; align-items:center; padding:14px 18px; border-bottom:1px solid var(--line); position:sticky; top:0; background:var(--card); z-index:1; }
+    .dlg-head h2 { margin:0; font-size:1.05rem; }
+    .dlg-body { padding:16px 18px; display:grid; gap:12px; }
+    .dlg-foot { display:flex; gap:10px; justify-content:flex-end; padding:14px 18px; border-top:1px solid var(--line); position:sticky; bottom:0; background:var(--card); }
+    .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:12px; }
+    @media (max-width:640px) { .grid2 { grid-template-columns:1fr; } }
+    label { display:grid; gap:4px; font-size:.85rem; font-weight:600; }
+    label small { font-weight:400; color:var(--muted); }
+    input[type=text], input[type=url], input[type=number], input[type=password], input[type=email], textarea {
+      font:inherit; width:100%; padding:9px 11px; border-radius:10px; border:1px solid var(--line); background:var(--field); color:var(--text); }
+    textarea { min-height:90px; resize:vertical; }
+    input:focus, textarea:focus, button:focus-visible { outline:2px solid var(--accent); outline-offset:1px; }
+    .check { display:flex; align-items:center; gap:8px; font-weight:600; }
+    fieldset { border:1px solid var(--line); border-radius:12px; padding:12px; margin:0; }
+    legend { font-weight:700; padding:0 6px; font-size:.9rem; }
+    .imgbox { display:grid; grid-template-columns:140px 1fr; gap:12px; align-items:start; }
+    @media (max-width:640px) { .imgbox { grid-template-columns:1fr; } }
+    .preview { width:140px; height:100px; border-radius:10px; border:1px dashed var(--line); display:grid; place-items:center; color:var(--muted); font-size:.75rem; overflow:hidden; }
+    .preview img { width:100%; height:100%; object-fit:cover; }
+    #toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 18px; box-shadow:0 10px 30px rgba(0,0,0,.25); z-index:50; max-width:92vw; }
+    #toast.err { border-color:var(--danger); color:var(--danger); }
+    #toast.ok { border-color:var(--ok); }
+  </style>
+</head>
+<body>
+  <header class="top">
+    <h1>🛠️ لوحة إدارة معرض الأعمال</h1>
+    <div class="who">
+      <span id="userEmail"></span>
+      <a class="btn" href="./index.html" target="_blank" rel="noopener">عرض الموقع ↗</a>
+      <button type="button" id="logoutBtn" hidden>تسجيل الخروج</button>
+    </div>
+  </header>
+
+  <main>
+    <!-- Loading -->
+    <section id="screenLoading" class="panel center"><p>جاري التحميل…</p></section>
+
+    <!-- Setup needed -->
+    <section id="screenSetup" class="panel center" hidden>
+      <h2>⚙️ الربط لم يكتمل بعد</h2>
+      <p>افتح ملف <code>firebase-config.js</code> وضع فيه إعدادات مشروع Firebase وبريدك الإلكتروني، ثم ارفعه مع باقي الملفات.</p>
+      <p class="hint">الخطوات التفصيلية موجودة في ملف <code>SETUP-AR.md</code>.</p>
+    </section>
+
+    <!-- Login -->
+    <section id="screenLogin" class="panel center" hidden>
+      <h2>تسجيل الدخول</h2>
+      <p class="hint">الدخول مسموح فقط لصاحب المعرض.</p>
+      <form id="loginForm" style="display:grid;gap:12px;max-width:340px;margin:16px auto 0;text-align:start">
+        <label>اسم المستخدم<input type="email" id="loginEmail" name="email" dir="ltr" autocomplete="username" required></label>
+        <label>كلمة المرور<input type="password" id="loginPass" name="password" dir="ltr" autocomplete="current-password" required></label>
+        <button type="submit" id="loginBtn" class="primary">🔐 تسجيل الدخول</button>
+      </form>
+    </section>
+
+    <!-- Denied -->
+    <section id="screenDenied" class="panel center" hidden>
+      <h2>⛔ غير مصرّح</h2>
+      <p>هذا الحساب (<span id="deniedEmail" class="code"></span>) ليس مسموحًا له بإدارة المعرض. تأكد أن معرّف المستخدم (UID) في <code>firebase-config.js</code> و<code>firestore.rules</code> يطابق مستخدمك في Firebase.</p>
+      <button type="button" id="deniedLogout">تسجيل الخروج وتجربة حساب آخر</button>
+    </section>
+
+    <!-- App -->
+    <section id="screenApp" hidden>
+      <div id="panepublic" class="panel">
+        <div class="toolbar">
+          <button type="button" id="addPublic" class="primary">＋ إضافة عمل جديد</button>
+          <button type="button" id="seedBtn" hidden>⬇️ استيراد أعمالي الحالية من الموقع</button>
+          <span class="grow"></span>
+          <span class="hint" id="publicCount"></span>
+        </div>
+        <p class="hint">الترتيب هنا هو نفس ترتيب ظهور الأعمال في الموقع. العمل المخفي لا يظهر للزوار.</p>
+        <div id="publicList" class="list"></div>
+      </div>
+
+    </section>
+  </main>
+
+  <!-- Edit dialog -->
+  <dialog id="dlg">
+    <form id="form" method="dialog" novalidate>
+      <div class="dlg-head">
+        <h2 id="dlgTitle">عمل جديد</h2>
+        <button type="button" class="icon" id="dlgClose" aria-label="إغلاق">✕</button>
+      </div>
+      <div class="dlg-body">
+        <p class="hint">املأ العربي أو الإنجليزي أو الاثنين — إذا تركت لغة فارغة يظهر النص بالأخرى تلقائيًا. الحقول المعلّمة بـ * مطلوبة.</p>
+        <div class="grid2">
+          <label>العنوان (عربي) *<input type="text" name="title_ar"></label>
+          <label>Title (English)<input type="text" name="title_en" dir="ltr"></label>
+          <label>ملخص قصير (عربي)<textarea name="summary_ar"></textarea></label>
+          <label>Short summary (English)<textarea name="summary_en" dir="ltr"></textarea></label>
+          <label>الوصف الكامل (عربي) <small>يظهر في نافذة التفاصيل</small><textarea name="description_ar" style="min-height:140px"></textarea></label>
+          <label>Full description (English)<textarea name="description_en" dir="ltr" style="min-height:140px"></textarea></label>
+          <label>الفئة (عربي)<input type="text" name="category_ar" placeholder="مثال: منصة تعليمية"></label>
+          <label>Category (English)<input type="text" name="category_en" dir="ltr" placeholder="e.g. Educational Platform"></label>
+          <label>وصف الصورة (عربي) <small>يظهر إذا لم توجد صورة</small><input type="text" name="media_ar"></label>
+          <label>Image caption (English)<input type="text" name="media_en" dir="ltr"></label>
+        </div>
+        <div class="grid2">
+          <label>رابط المشروع *<input type="url" name="link" dir="ltr" placeholder="https://..."></label>
+          <label>السنة<input type="text" name="year" dir="ltr" placeholder="2026"></label>
+        </div>
+        <label>التقنيات <small>افصل بينها بفاصلة، مثال: HTML5, CSS3, JavaScript</small>
+          <input type="text" name="stack" dir="ltr">
+        </label>
+        <div class="grid2">
+          <label class="check"><input type="checkbox" name="featured"> ⭐ عمل مميز</label>
+          <label class="check"><input type="checkbox" name="visible" checked> ظاهر في الموقع</label>
+        </div>
+
+        <fieldset data-img="image">
+          <legend>الصورة الرئيسية</legend>
+          <div class="imgbox">
+            <div class="preview" data-preview>بدون صورة</div>
+            <div style="display:grid;gap:8px">
+              <label>ارفع صورة <small>تُضغط تلقائيًا إلى WebP خفيف</small><input type="file" accept="image/*" data-file></label>
+              <label>أو ضع رابط صورة<input type="url" dir="ltr" data-url placeholder="https://... أو images/اسم-الصورة.webp"></label>
+              <button type="button" class="danger" data-clear>إزالة الصورة</button>
+            </div>
+          </div>
+        </fieldset>
+        <fieldset data-img="mobileImage">
+          <legend>صورة الجوال (اختياري)</legend>
+          <div class="imgbox">
+            <div class="preview" data-preview>بدون صورة</div>
+            <div style="display:grid;gap:8px">
+              <label>ارفع صورة<input type="file" accept="image/*" data-file></label>
+              <label>أو ضع رابط صورة<input type="url" dir="ltr" data-url placeholder="https://..."></label>
+              <button type="button" class="danger" data-clear>إزالة الصورة</button>
+            </div>
+          </div>
+        </fieldset>
+        <p class="hint" id="sizeHint"></p>
+        <p class="hint warn" id="formErr" role="alert"></p>
+      </div>
+      <div class="dlg-foot">
+        <button type="button" id="dlgCancel">إلغاء</button>
+        <button type="submit" id="dlgSave" class="primary">حفظ</button>
+      </div>
+    </form>
+  </dialog>
+
+  <div id="toast" role="status" hidden></div>
+
+<script type="module">
+  const SDK_VERSION = '10.14.1';
+  const $ = (sel, root = document) => root.querySelector(sel);
+
+  /* ---------- tiny DOM helper (always textContent -> no HTML injection) ---------- */
+  function h(tag, attrs = {}, ...kids) {
+    const el = document.createElement(tag);
+    for (const [k, v] of Object.entries(attrs || {})) {
+      if (v == null || v === false) continue;
+      if (k === 'class') el.className = v;
+      else if (k.startsWith('on') && typeof v === 'function') el.addEventListener(k.slice(2), v);
+      else el.setAttribute(k, v === true ? '' : v);
+    }
+    kids.flat().forEach((c) => { if (c == null || c === false) return; el.append(c.nodeType ? c : document.createTextNode(String(c))); });
+    return el;
+  }
+
+  let toastTimer = 0;
+  function toast(msg, type = 'ok') {
+    const t = $('#toast'); t.textContent = msg; t.className = type; t.hidden = false;
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => { t.hidden = true; }, type === 'err' ? 6000 : 2800);
+  }
+  function show(name) {
+    ['Loading', 'Setup', 'Login', 'Denied', 'App'].forEach((n) => { $('#screen' + n).hidden = n !== name; });
+  }
+  function authErrorText(e) {
+    const c = (e && e.code) || '';
+    if (c === 'auth/unauthorized-domain') return 'النطاق غير مضاف في Firebase: Authentication ← Settings ← Authorized domains، أضف anaspal.github.io';
+    if (c === 'auth/invalid-credential' || c === 'auth/wrong-password' || c === 'auth/user-not-found' || c === 'auth/invalid-email') return 'اسم المستخدم أو كلمة المرور غير صحيحة.';
+    if (c === 'auth/too-many-requests') return 'محاولات كثيرة خاطئة، انتظر قليلًا ثم أعد المحاولة.';
+    if (c === 'auth/operation-not-allowed') return 'تسجيل الدخول بالبريد/كلمة المرور غير مفعّل في Firebase (Authentication ← Sign-in method).';
+    if (c === 'auth/popup-closed-by-user' || c === 'auth/cancelled-popup-request') return 'تم إغلاق نافذة الدخول.';
+    if (c === 'permission-denied' || c === 'firestore/permission-denied') return 'ممنوع: تأكد من نشر قواعد Firestore (firestore.rules) وأن بريدك مطابق.';
+    return (e && e.message) || 'حدث خطأ غير متوقع';
+  }
+
+  /* ---------- Firebase boot ---------- */
+  let FB = null, ADMIN_EMAIL = '', ADMIN_UID = '';
+  async function boot() {
+    let mod;
+    try { mod = await import('./firebase-config.js'); } catch (_) { show('Setup'); return; }
+    const cfg = mod.firebaseConfig; ADMIN_EMAIL = String(mod.adminEmail || '').trim().toLowerCase(); ADMIN_UID = String(mod.adminUid || '').trim();
+    if (!cfg || !cfg.apiKey || !cfg.projectId || /PASTE|YOUR_/i.test(cfg.apiKey + cfg.projectId + ADMIN_UID) || !ADMIN_UID) { show('Setup'); return; }
+    try {
+      const base = `https://www.gstatic.com/firebasejs/${SDK_VERSION}`;
+      const [appM, authM, fsM] = await Promise.all([
+        import(`${base}/firebase-app.js`), import(`${base}/firebase-auth.js`), import(`${base}/firebase-firestore.js`)
+      ]);
+      const app = appM.initializeApp(cfg);
+      FB = { auth: authM.getAuth(app), db: fsM.getFirestore(app), authM, fsM };
+    } catch (e) { show('Setup'); toast('تعذّر تحميل Firebase: ' + authErrorText(e), 'err'); return; }
+    if (ADMIN_EMAIL) $('#loginEmail').value = ADMIN_EMAIL;
+    FB.authM.onAuthStateChanged(FB.auth, onUser);
+  }
+
+  async function onUser(user) {
+    $('#logoutBtn').hidden = !user;
+    $('#userEmail').textContent = user ? user.email : '';
+    if (!user) { show('Login'); return; }
+    const ok = user.uid === ADMIN_UID;
+    if (!ok) { $('#deniedEmail').textContent = user.email || ''; show('Denied'); return; }
+    show('App');
+    await loadPublic();
+  }
+
+  $('#loginForm').addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const btn = $('#loginBtn'); btn.disabled = true;
+    try {
+      await FB.authM.signInWithEmailAndPassword(FB.auth, $('#loginEmail').value.trim(), $('#loginPass').value);
+      $('#loginPass').value = '';
+    } catch (e) { toast(authErrorText(e), 'err'); }
+    finally { btn.disabled = false; }
+  });
+  const doLogout = () => FB.authM.signOut(FB.auth);
+  $('#logoutBtn').addEventListener('click', doLogout);
+  $('#deniedLogout').addEventListener('click', doLogout);
+
+  /* ---------- images ---------- */
+  const dataUrlBytes = (u) => Math.floor((u.length - u.indexOf(',') - 1) * 3 / 4);
+  async function compressImage(file, { maxW = 1100, maxBytes = 260 * 1024 } = {}) {
+    let bmp;
+    try { bmp = await createImageBitmap(file); } catch (_) { throw new Error('تعذّر قراءة الصورة، جرّب صيغة PNG أو JPG أو WebP.'); }
+    let w = Math.min(bmp.width, maxW);
+    for (let attempt = 0; attempt < 8; attempt++) {
+      const hgt = Math.max(1, Math.round(bmp.height * w / bmp.width));
+      const c = document.createElement('canvas'); c.width = w; c.height = hgt;
+      c.getContext('2d').drawImage(bmp, 0, 0, w, hgt);
+      for (let q = 0.82; q >= 0.4; q -= 0.14) {
+        let url = c.toDataURL('image/webp', q);
+        if (!url.startsWith('data:image/webp')) url = c.toDataURL('image/jpeg', q);
+        if (dataUrlBytes(url) <= maxBytes) { if (bmp.close) bmp.close(); return url; }
+      }
+      w = Math.round(w * 0.8);
+    }
+    throw new Error('الصورة كبيرة جدًا حتى بعد الضغط، استخدم صورة أصغر أو ضع رابطها.');
+  }
+
+  /* ---------- edit dialog  ---------- */
+  const dlg = $('#dlg'), form = $('#form');
+  const TEXT_FIELDS = ['title_ar','title_en','summary_ar','summary_en','description_ar','description_en','category_ar','category_en','media_ar','media_en','year','link'];
+  let editCtx = null;           
+  let formImages = { image: '', mobileImage: '' };
+
+  function renderPreview(key) {
+    const box = $(`fieldset[data-img="${key}"] [data-preview]`);
+    box.replaceChildren();
+    const v = formImages[key];
+    if (v) box.append(h('img', { src: v, alt: '' })); else box.textContent = 'بدون صورة';
+    const total = (formImages.image || '').length + (formImages.mobileImage || '').length;
+    $('#sizeHint').textContent = total > 1000 ? `حجم الصور المخزنة داخل القاعدة: ${Math.round(total * 0.75 / 1024)} KB` : '';
+  }
+  document.querySelectorAll('fieldset[data-img]').forEach((fs) => {
+    const key = fs.dataset.img;
+    $('[data-file]', fs).addEventListener('change', async (e) => {
+      const file = e.target.files && e.target.files[0]; if (!file) return;
+      try { formImages[key] = await compressImage(file); $('[data-url]', fs).value = ''; renderPreview(key); }
+      catch (err) { toast(err.message, 'err'); }
+      e.target.value = '';
+    });
+    $('[data-url]', fs).addEventListener('input', (e) => { formImages[key] = e.target.value.trim(); renderPreview(key); });
+    $('[data-clear]', fs).addEventListener('click', () => { formImages[key] = ''; $('[data-url]', fs).value = ''; renderPreview(key); });
+  });
+
+  function openForm(ctx, data) {
+    editCtx = ctx;
+    const d = data || {};
+    $('#dlgTitle').textContent = ctx.isNew ? 'إضافة عمل جديد' : 'تعديل العمل';
+    TEXT_FIELDS.forEach((f) => { form.elements[f].value = d[f] == null ? '' : d[f]; });
+    form.elements.stack.value = Array.isArray(d.stack) ? d.stack.join(', ') : '';
+    form.elements.featured.checked = d.featured === true;
+    form.elements.visible.checked = d.visible !== false;
+    formImages = { image: d.image || '', mobileImage: d.mobileImage || '' };
+    document.querySelectorAll('fieldset[data-img]').forEach((fs) => {
+      const key = fs.dataset.img; const v = formImages[key];
+      $('[data-url]', fs).value = v && !v.startsWith('data:') ? v : '';
+      renderPreview(key);
+    });
+    $('#formErr').textContent = '';
+    dlg.showModal();
+  }
+  const closeForm = () => { if (dlg.open) dlg.close(); editCtx = null; };
+  $('#dlgClose').addEventListener('click', closeForm);
+  $('#dlgCancel').addEventListener('click', closeForm);
+
+  function readForm() {
+    const out = {};
+    TEXT_FIELDS.forEach((f) => { out[f] = form.elements[f].value.trim(); });
+    out.stack = form.elements.stack.value.split(',').map((x) => x.trim()).filter(Boolean);
+    out.featured = form.elements.featured.checked;
+    out.image = (formImages.image || '').trim();
+    out.mobileImage = (formImages.mobileImage || '').trim();
+    out.visible = form.elements.visible.checked;
+    return out;
+  }
+  function validate(d) {
+    if (!d.title_ar && !d.title_en) return 'اكتب عنوان العمل (بالعربي أو الإنجليزي).';
+    if (!d.link) return 'رابط المشروع مطلوب.';
+    if (!/^https?:\/\//i.test(d.link)) return 'رابط المشروع يجب أن يبدأ بـ https://';
+    const imgs = (d.image || '').length + (d.mobileImage || '').length;
+    if (imgs * 0.75 > 700 * 1024) return 'حجم الصور كبير على قاعدة البيانات (الحد الأقصى ≈ 700KB). استخدم صورة أصغر أو ضع رابط صورة.';
+    return '';
+  }
+
+  form.addEventListener('submit', async (ev) => {
+    ev.preventDefault();
+    const data = readForm(); const err = validate(data);
+    if (err) { $('#formErr').textContent = err; return; }
+    $('#formErr').textContent = '';
+    const btn = $('#dlgSave'); btn.disabled = true;
+    try {
+      await savePublicItem(data);
+      closeForm();
+    } catch (e) { $('#formErr').textContent = authErrorText(e); }
+    finally { btn.disabled = false; }
+  });
+
+  /* ---------- public projects (Firestore: projects/*) ---------- */
+  let publicList = [];
+  const projTitle = (p) => p.title_ar || p.title_en || '(بدون عنوان)';
+
+  async function loadPublic() {
+    const { db, fsM } = FB;
+    try {
+      const snap = await fsM.getDocs(fsM.collection(db, 'projects'));
+      publicList = [];
+      snap.forEach((d) => publicList.push({ id: d.id, ...d.data() }));
+      publicList.sort((a, b) => ((Number(a.order) || 9999) - (Number(b.order) || 9999)) || projTitle(a).localeCompare(projTitle(b)));
+      renderPublic();
+    } catch (e) { toast(authErrorText(e), 'err'); }
+  }
+
+  function thumb(p) {
+    const t = h('div', { class: 'thumb' });
+    if (p.image) t.append(h('img', { src: p.image, alt: '' })); else t.textContent = 'لا صورة';
+    return t;
+  }
+
+  function renderPublic() {
+    const box = $('#publicList'); box.replaceChildren();
+    $('#publicCount').textContent = `${publicList.length} عمل`;
+    $('#seedBtn').hidden = publicList.length > 0;
+    if (!publicList.length) box.append(h('p', { class: 'hint' }, 'لا توجد أعمال في القاعدة بعد. اضغط «استيراد أعمالي الحالية» لنقل أعمالك الموجودة، أو أضف عملًا جديدًا. (حتى ذلك الحين يعرض الموقع النسخة الاحتياطية المدمجة.)'));
+    publicList.forEach((p, i) => {
+      box.append(h('div', { class: 'row' + (p.visible === false ? ' hidden-item' : '') },
+        thumb(p),
+        h('div', {},
+          h('h3', {}, projTitle(p), p.featured ? h('span', { class: 'badge' }, '⭐ مميز') : null, p.visible === false ? h('span', { class: 'badge' }, 'مخفي') : null),
+          h('div', { class: 'meta' }, [p.category_ar || p.category_en, p.year].filter(Boolean).join(' · '))
+        ),
+        h('div', { class: 'actions' },
+          h('button', { type: 'button', class: 'icon', title: 'للأعلى', 'aria-label': 'نقل للأعلى', disabled: i === 0, onclick: () => movePublic(i, -1) }, '▲'),
+          h('button', { type: 'button', class: 'icon', title: 'للأسفل', 'aria-label': 'نقل للأسفل', disabled: i === publicList.length - 1, onclick: () => movePublic(i, 1) }, '▼'),
+          h('button', { type: 'button', onclick: () => openForm({ id: p.id }, p) }, '✏️ تعديل'),
+          h('button', { type: 'button', onclick: () => toggleVisible(p) }, p.visible === false ? '👁 إظهار' : '🙈 إخفاء'),
+          h('button', { type: 'button', class: 'danger', onclick: () => deletePublic(p) }, '🗑 حذف')
+        )));
+    });
+  }
+
+  async function savePublicItem(data) {
+    const { db, fsM } = FB;
+    data.updatedAt = fsM.serverTimestamp();
+    if (editCtx.id) {
+      await fsM.setDoc(fsM.doc(db, 'projects', editCtx.id), data, { merge: true });
+    } else {
+      const maxOrder = publicList.reduce((m, p) => Math.max(m, Number(p.order) || 0), 0);
+      data.order = maxOrder + 10; data.createdAt = fsM.serverTimestamp();
+      await fsM.addDoc(fsM.collection(db, 'projects'), data);
+    }
+    toast('✅ تم الحفظ'); await loadPublic();
+  }
+
+  async function toggleVisible(p) {
+    const { db, fsM } = FB;
+    try { await fsM.setDoc(fsM.doc(db, 'projects', p.id), { visible: p.visible === false, updatedAt: fsM.serverTimestamp() }, { merge: true }); await loadPublic(); }
+    catch (e) { toast(authErrorText(e), 'err'); }
+  }
+
+  async function deletePublic(p) {
+    if (!confirm(`حذف «${projTitle(p)}» نهائيًا؟ لا يمكن التراجع.`)) return;
+    const { db, fsM } = FB;
+    try { await fsM.deleteDoc(fsM.doc(db, 'projects', p.id)); toast('🗑 تم الحذف'); await loadPublic(); }
+    catch (e) { toast(authErrorText(e), 'err'); }
+  }
+
+  async function movePublic(i, dir) {
+    const j = i + dir; if (j < 0 || j >= publicList.length) return;
+    const { db, fsM } = FB;
+    const arr = publicList.slice(); [arr[i], arr[j]] = [arr[j], arr[i]];
+    try {
+      const batch = fsM.writeBatch(db);
+      arr.forEach((p, idx) => { const order = (idx + 1) * 10; if (p.order !== order) batch.set(fsM.doc(db, 'projects', p.id), { order }, { merge: true }); });
+      await batch.commit(); await loadPublic();
+    } catch (e) { toast(authErrorText(e), 'err'); }
+  }
+
+  $('#addPublic').addEventListener('click', () => openForm({ isNew: true }, { visible: true }));
+
+  $('#seedBtn').addEventListener('click', async () => {
+    if (!confirm('سيتم نسخ أعمالك الموجودة حاليًا في الموقع إلى قاعدة البيانات. متابعة؟')) return;
+    const btn = $('#seedBtn'); btn.disabled = true;
+    try {
+      const res = await fetch('./seed-projects.json', { cache: 'no-store' });
+      if (!res.ok) throw new Error('ملف seed-projects.json غير موجود بجانب الصفحة.');
+      const items = await res.json();
+      const { db, fsM } = FB; const batch = fsM.writeBatch(db);
+      items.forEach((p) => { batch.set(fsM.doc(fsM.collection(db, 'projects')), { ...p, visible: p.visible !== false, createdAt: fsM.serverTimestamp(), updatedAt: fsM.serverTimestamp() }); });
+      await batch.commit(); toast(`✅ تم استيراد ${items.length} عمل`); await loadPublic();
+    } catch (e) { toast(authErrorText(e), 'err'); }
+    finally { btn.disabled = false; }
+  });
+
+  boot();
+</script>
+</body>
+</html>
